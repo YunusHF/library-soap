@@ -8,15 +8,15 @@
 <div align="center">
 
 [![Status](https://img.shields.io/badge/status-active-success.svg)]()
-[![GitHub Issues](https://img.shields.io/github/issues/kylelobo/The-Documentation-Compendium.svg)](https://github.com/kylelobo/The-Documentation-Compendium/issues)
-[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/kylelobo/The-Documentation-Compendium.svg)](https://github.com/kylelobo/The-Documentation-Compendium/pulls)
+[![GitHub Issues](https://img.shields.io/github/issues/YunusHF/library-soap.svg)](https://github.com/YunusHF/library-soap/issues)
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/YunusHF/library-soap.svg)](https://github.com/YunusHF/library-soap/pulls)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](/LICENSE)
 
 </div>
 
 ---
 
-<p align="center"> Few lines describing your project.
+<p align="center"> A simple Go application that provides a SOAP-based API endpoint.
     <br> 
 </p>
 
@@ -34,7 +34,10 @@
 
 ## 🧐 About <a name = "about"></a>
 
-Write about 1-2 paragraphs describing the purpose of your project.
+This app will:
+- Retrieves book data (ID, Title, Author, Published Date) from a MySQL database
+- Returns the book data in a SOAP envelope format
+- Uses the Gorilla Mux router for the HTTP server
 
 ## 🏁 Getting Started <a name = "getting_started"></a>
 
@@ -45,70 +48,74 @@ These instructions will get you a copy of the project up and running on your loc
 What things you need to install the software and how to install them.
 
 ```
-Give examples
+- Go programming language installed
+- MySQL server running and accessible
 ```
 
-### Installing
+### Installation
 
-A step by step series of examples that tell you how to get a development env running.
-
-Say what the step will be
-
+1. Clone the repository:
 ```
-Give the example
+git clone https://github.com/YunusHF/library-soap.git
 ```
 
-And repeat
-
+2. Navigate to the project directory:
 ```
-until finished
-```
-
-End with an example of getting some data out of the system or using it for a little demo.
-
-## 🔧 Running the tests <a name = "tests"></a>
-
-Explain how to run the automated tests for this system.
-
-### Break down into end to end tests
-
-Explain what these tests test and why
-
-```
-Give an example
+cd book-soap-api
 ```
 
-### And coding style tests
-
-Explain what these tests test and why
-
+3. Install the required Go packages:
 ```
-Give an example
+go get github.com/gorilla/mux
+go get github.com/go-sql-driver/mysql
 ```
 
-## 🎈 Usage <a name="usage"></a>
+4. Update the database connection details in the `main.go` file:
+```go
+db, err := sql.Open("mysql", "user:password@tcp(localhost:3306)/books_db")
+```
 
-Add notes about how to use the system.
+5. Ensure the `books` table exists in your MySQL database with the following columns:
+   - `id` (INT)
+   - `title` (VARCHAR)
+   - `author` (VARCHAR)
+   - `published_date` (DATE)
 
-## 🚀 Deployment <a name = "deployment"></a>
+### Usage
 
-Add additional notes about how to deploy this on a live system.
+1. Start the server:
+```
+go run main.go
+```
 
-## ⛏️ Built Using <a name = "built_using"></a>
+2. Send a GET request to `http://localhost:8080/books` to retrieve the book data in the SOAP envelope format.
 
-- [MongoDB](https://www.mongodb.com/) - Database
-- [Express](https://expressjs.com/) - Server Framework
-- [VueJs](https://vuejs.org/) - Web Framework
-- [NodeJs](https://nodejs.org/en/) - Server Environment
+Example response:
+```xml
+<soap:Envelope xmlns:soap="http://www.w3.org/2003/05/soap-envelope">
+  <soap:Body>
+    <BooksResponse>
+      <Book>
+        <ID>1</ID>
+        <Title>Clean Code</Title>
+        <Author>Robert C. Martin</Author>
+        <PublishedDate>2008-08-01</PublishedDate>
+      </Book>
+      <Book>
+        <ID>2</ID>
+        <Title>The Pragmatic Programmer</Title>
+        <Author>Andrew Hunt</Author>
+        <PublishedDate>1999-10-30</PublishedDate>
+      </Book>
+    </BooksResponse>
+  </soap:Body>
+</soap:Envelope>
+```
 
-## ✍️ Authors <a name = "authors"></a>
+### Contributing
 
-- [@kylelobo](https://github.com/kylelobo) - Idea & Initial work
+If you find any issues or have suggestions for improvements, feel free to open an issue or submit a pull request.
 
-See also the list of [contributors](https://github.com/kylelobo/The-Documentation-Compendium/contributors) who participated in this project.
+### License
 
-## 🎉 Acknowledgements <a name = "acknowledgement"></a>
-
-- Hat tip to anyone whose code was used
-- Inspiration
-- References
+This project is licensed under the [MIT License](LICENSE).

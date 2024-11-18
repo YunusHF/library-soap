@@ -8,11 +8,12 @@ import (
 	"net/http"
 	"soap-library/delivery"
 	"soap-library/pkg/pkgcmd"
-	"soap-library/pkg/pkgtime"
+	"soap-library/pkg/pkguid"
 	"soap-library/repository"
 	"soap-library/service"
 
 	"github.com/gorilla/mux"
+	"github.com/hashicorp/go-multierror"
 )
 
 var _ pkgcmd.Runnable = (*App)(nil)
@@ -21,7 +22,8 @@ type App struct {
 	database   *sql.DB
 	router     *mux.Router
 	httpServer *http.Server
-	clock      pkgtime.Time
+	snowflake  pkguid.Snowflake
+	err        error
 	closersFn  []func(context.Context) error
 }
 
@@ -35,6 +37,7 @@ func (app *App) Start() error {
 
 		log.Println("http server listen on", app.httpServer.Addr)
 		if err := app.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+			app.err = multierror.Append(app.err, err)
 			log.Fatalf("fail to start rest server, err: %v\n", err)
 		}
 	}()
@@ -45,6 +48,7 @@ func (app *App) Start() error {
 func (app *App) Stop(ctx context.Context) error {
 	for _, closer := range app.closersFn {
 		if err := closer(ctx); err != nil {
+			app.err = multierror.Append(app.err, err)
 			return err
 		}
 	}
@@ -54,7 +58,7 @@ func (app *App) Stop(ctx context.Context) error {
 
 func NewServer() (*App, error) {
 	app := &App{
-		clock: pkgtime.NewTime(),
+		err: nil,
 	}
 
 	return app.spinUp()
@@ -63,18 +67,20 @@ func NewServer() (*App, error) {
 func (app *App) spinUp() (*App, error) {
 
 	if err := app.initDB(); err != nil {
+		app.err = multierror.Append(app.err, err)
 		return nil, err
 	}
 
 	app.initRouter()
 	app.makeHTTPServer()
+	app.initSnowflakeGen()
 	app.setUpClosers()
 
 	// init repository
 	libraryRepo := repository.NewLibraryRepo(app.database)
 
 	//init service
-	libraryService := service.NewLibraryService(libraryRepo)
+	libraryService := service.NewLibraryService(libraryRepo, app.snowflake)
 
 	// init handlet
 	delivery.NewLibraryHandler(app.router, libraryService)

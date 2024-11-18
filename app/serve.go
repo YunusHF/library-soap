@@ -2,18 +2,24 @@ package app
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
 )
 
 func (app *App) Run() {
 	terminateChan := app.createTerminateSignal()
 
-	if err := app.Start(); err != nil {
-		log.Fatalf("unable to start server, error: %v\n", err)
+	if err := app.Start(); app.err != nil || err != nil {
+		var mErr *multierror.Error
+		if errors.As(app.err, &mErr) {
+			log.Fatalf("error: %+v", mErr.ErrorOrNil())
+		}
 	}
 
 	<-terminateChan
@@ -34,7 +40,7 @@ func (app *App) createTerminateSignal() <-chan struct{} {
 		defer cancel()
 
 		if err := app.Stop(ctx); err != nil {
-			log.Fatalf("application shutdown with problem, error: %v\n", err)
+			app.err = multierror.Append(app.err, err)
 		}
 
 		terminateChan <- struct{}{}
